@@ -1,0 +1,12 @@
+{
+	"modules": { 
+		"Calculatrice": {
+			"version": "1.0",
+			"name": "calcul",
+			"rules": {
+				"getCalcul": ["calculation","calculates","calculate","how much is","how many do","can you"]
+			}
+		}
+	}
+}
+			
