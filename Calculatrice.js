@@ -3,26 +3,25 @@ export async function action(data, callback) {
 	try {
 		
 		const tblActions = {
-			getCalcul : () => getCalcul(data, data.client, callback)					
+			getCalcul : () => getCalcul(data, data.client)					
 		}
 		
 		info("Calculatrice:", data.action.command, L.get("plugin.from"), data.client);
 			
 		if (tblActions[data.action.command]) {
-			tblActions[data.action.command]();
-		} else {
-			callback();
+			await tblActions[data.action.command]();
 		}
 
 	} catch (err) {
 		if (data.client) Avatar.Speech.end(data.client);
 		if (err.message) error(err.message);
-		callback();
 	}	
+
+	callback();
 }
 
 
-const getCalcul = (data, client, callback) => {
+const getCalcul = (data, client) => {
 
 	let sentence = data.rawSentence || data.action.sentence || "";
 	sentence = sentence.toLowerCase();
@@ -38,72 +37,48 @@ const getCalcul = (data, client, callback) => {
 	});
 
 	let expression = sentence
+        .replace(/fois|x|multiplie/g, "*")
+        .replace(/divisé par|divise par|diviser/g, "/")
+        .replace(/plus/g, "+")
+        .replace(/moins/g, "-")
+        .replace(/ouvre parenth[eè]se/g, "(")
+        .replace(/ferme parenth[eè]se/g, ")")
+        .replace(/virgule/g, ".")
+        .replace(/(\d+)\s*%/g, "($1/100)")
+        .replace(/(\d+)\s*%\s*de\s*(\d+)/g, "($1/100)*$2")
+        .replace(/racine carr[ée]e? de (\d+)/g, "Math.sqrt($1)")
+        .replace(/(\d+)\s*puissance\s*(\d+)/g, "Math.pow($1,$2)")
+        .replace(/[^0-9+\-*/().,\sMathpowqrt]/g, "")
+        .replace(/,/g, ".")
+        .trim();
 
-		// opérations
-		.replace(/fois|x|multiplie/g, "*")
-		.replace(/divisé par|divise par|diviser/g, "/")
-		.replace(/plus/g, "+")
-		.replace(/moins/g, "-")
+    if (!expression) {
+        return Avatar.speak("Je n'ai pas trouvé de calcul.", client, false, () => {
+            Avatar.Speech.end(client);
+        });
+    }
 
-		// parenthèses vocales
-		.replace(/ouvre parenth[eè]se/g, "(")
-		.replace(/ferme parenth[eè]se/g, ")")
+    let result;
+    try {
+        result = Function(`"use strict"; return (${expression})`)();
+    } catch {
+        return Avatar.speak("Erreur dans le calcul.", client, false, () => {
+            Avatar.Speech.end(client);
+        });
+    }
 
-		// virgule parlée
-		.replace(/virgule/g, ".")
+    if (!isFinite(result)) {
+        return Avatar.speak("Résultat invalide.", client, false, () => {
+            Avatar.Speech.end(client);
+        });
+    }
 
-		// pourcentage simple
-		.replace(/(\d+)\s*%/g, "($1/100)")
+    const formatted = result.toLocaleString("fr-FR", {
+        maximumFractionDigits: 4
+    });
 
-		// pourcentage de
-		.replace(/(\d+)\s*%\s*de\s*(\d+)/g, "($1/100)*$2")
-
-		// racine carrée
-		.replace(/racine carr[ée]e? de (\d+)/g, "Math.sqrt($1)")
-
-		// puissance
-		.replace(/(\d+)\s*puissance\s*(\d+)/g, "Math.pow($1,$2)")
-
-		// nettoyage sécurité
-		.replace(/[^0-9+\-*/().,\sMathpowqrt]/g, "")
-		.replace(/,/g, ".")
-		.trim();
-
-	if (!expression) {
-		Avatar.speak("Je n'ai pas trouvé de calcul.", client, () => {
-			Avatar.Speech.end(client);
-			callback();
-		});
-		return;
-	}
-
-	let result;
-
-	try {
-		result = Function(`"use strict"; return (${expression})`)();
-	} catch {
-		Avatar.speak("Erreur dans le calcul.", client, () => {
-			Avatar.Speech.end(client);
-			callback();
-		});
-		return;
-	}
-
-	if (!isFinite(result)) {
-		Avatar.speak("Résultat invalide.", client, () => {
-			Avatar.Speech.end(client);
-			callback();
-		});
-		return;
-	}
-
-	const formatted = result.toLocaleString("fr-FR", {
-		maximumFractionDigits: 4
-	});
-
-	Avatar.speak(`Le résultat est ${formatted}`, client, () => {
-		Avatar.Speech.end(client);
-		callback();
-	});
+    Avatar.speak(`Le résultat est ${formatted}`, client, false, () => {
+        Avatar.Speech.end(client);
+    });
 };
 
