@@ -1,5 +1,3 @@
-import { evaluate } from "mathjs";
-
 export async function init() {
     await Avatar.lang.addPluginPak('Calculatrice');
 }
@@ -53,6 +51,29 @@ const replaceOperators = sentence => {
         .replace(/\bmoins\b| - /g, "-");
 };
 
+const evaluateSequential = (expr) => {
+    const tokens = expr.match(/(\d+(?:\.\d+)?|[\+\-\*\/])/g);
+    if (!tokens || tokens.length === 0) throw new Error("Expression invalide");
+
+    let total = parseFloat(tokens[0]);
+
+    for (let i = 1; i < tokens.length; i += 2) {
+        const operator = tokens[i];
+        const nextValue = parseFloat(tokens[i + 1]);
+
+        if (isNaN(nextValue)) break;
+
+        switch (operator) {
+            case '+': total += nextValue; break;
+            case '-': total -= nextValue; break;
+            case '*': total *= nextValue; break;
+            case '/': total /= nextValue; break;
+        }
+    }
+
+    return total;
+};
+
 const getCalcul = (data, client, Locale) => {
     const raw = data.rawSentence || data.action?.sentence || "";
     info("PHRASE RECUE:", raw);
@@ -74,7 +95,7 @@ const getCalcul = (data, client, Locale) => {
     let result;
 
     try {
-        result = evaluate(expr);
+        result = evaluateSequential(expr);
     } catch (err) {
         const tts = Locale.get("speech.noCalcul");
         info(tts);
