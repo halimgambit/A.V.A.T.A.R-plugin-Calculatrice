@@ -1,0 +1,7 @@
+{
+  "speech": {
+    "speakCalcul": "$$ égale $$",
+    "noUnderstand": "Je n'ai pas compris le calcul.",
+    "noCalcul": "Je ne peux pas calculer cette expression."
+  }
+}
