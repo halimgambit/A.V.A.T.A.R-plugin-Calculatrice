@@ -30,7 +30,7 @@ const normalizeSentence = raw =>
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/,/g, ".")
-        .replace(/\b(calcul|calcule|calculer|combien font|c est combien|peux tu|tu peux|me|dire|s il te plait)\b/g, "")
+        .replace(/\b(calcul|calcule|calculer|combien font|c'est combien|peux-tu|tu peux|me|dire|s'il te plait)\b/g, "")
         .trim();
 
 const convertWordsToNumbers = sentence => {
